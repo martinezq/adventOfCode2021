@@ -1,7 +1,7 @@
 const fs = require('fs');
 const R = require('ramda');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const initialAges = file.split(',').map(Number);
 
 let ages = initialAges;

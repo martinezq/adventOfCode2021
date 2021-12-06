@@ -1,7 +1,7 @@
 const fs = require('fs');
 const R = require('ramda');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const fileLines = file.split('\n');
 
 const lineCommands = fileLines.map(line => line.match(/(\d+),(\d+) -> (\d+),(\d+)/)).map(x => x.slice(1)).map(x => x.map(Number));

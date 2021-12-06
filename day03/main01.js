@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const data = file.split('\n').map(x => x.split('').filter(d => d.match(/[0-9]/)).map(d => Number(d)));
 
 const first = data[0];

@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const data = file.split('\n').map(x => Number(x));
 
 // const data = dataOrg.concat([0, 0]);

@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const lines = file.split('\n');
 
 const numbers = lines[0].split(',').map(Number);

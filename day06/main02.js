@@ -2,7 +2,7 @@ const { count } = require('console');
 const fs = require('fs');
 const R = require('ramda');
 
-const file = fs.readFileSync('input.txt').toString();
+const file = fs.readFileSync(`${__dirname}/input.txt`).toString();
 const initialAges = file.split(',').map(Number);
 
 const groups = R.groupBy(R.identity, initialAges);
