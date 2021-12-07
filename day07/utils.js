@@ -21,7 +21,11 @@ function logf(...x) {
     console.log(JSON.stringify(x, null, 2));
 }
 
+const minA = (x) => x.reduce((p, c) => Math.min(p, c), Number.POSITIVE_INFINITY);
+const maxA = (x) => x.reduce((p, c) => Math.max(p, c), Number.NEGATIVE_INFINITY);
+
 module.exports = {
     parse,
-    log, logf
+    log, logf,
+    minA, maxA
 }
