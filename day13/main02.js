@@ -20,17 +20,18 @@ function run(lines) {
     // U.log(folds);
 
     let step = data;
+    // printAsTile(step);
 
     folds.forEach(fold => {
-        U.log(fold, step);
+        // U.log(fold, step);
+        U.log(fold);
         step = doStep(step, fold);
+        // printAsTile(step);
     });
 
-    U.log('end', step);
+    printAsTile(step);
 
-    print(step);
-
-    return step.length;
+    return 0;
 }
 
 function doStep(data, fold) {
@@ -40,7 +41,7 @@ function doStep(data, fold) {
     const width = R.last(data.map(x => x[0]).sort((x, y) => x-y));
     const height = R.last(data.map(x => x[1]).sort((x, y) => x-y));
 
-    U.log(width, height);
+    // U.log(width, height);
 
     const p2m = p2.map(x => {
         if (fold.axis === 0) {
@@ -52,25 +53,16 @@ function doStep(data, fold) {
         return x;
     });
 
-    U.log(p1)
-    U.log(p2);
-    U.log(p2m);
+    // U.log(p1)
+    // U.log(p2);
+    // U.log(p2m);
     
     const result = p1.concat(p2m);
 
     return R.uniqBy(x => `${x[0]},${x[1]}`, result);
 }
 
-function print(data) {
-    const width = R.last(data.map(x => x[0]).sort((x, y) => x-y));
-    const height = R.last(data.map(x => x[1]).sort((x, y) => x-y));
-
-    R.times(r => {
-        let line = Array.from({ length: width }, x => '.');
-
-        data.filter(x => x[1] === r).forEach(x => line[x[0]] = '#')
-
-        console.log(line.join(''));
-    }, height+1);
-
+function printAsTile(data) {
+    const matrix = U.createMatrixFromPoints(data, '  ', () => '##');
+    U.log(U.matrixToTile(matrix));    
 }

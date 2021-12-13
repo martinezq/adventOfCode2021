@@ -1,4 +1,5 @@
 const fs = require('fs');
+const R = require('ramda');
 
 function runWrapper(f) {
 
@@ -67,6 +68,32 @@ function filterMatrix(matrix, f) {
     return matrix.flat().filter(f);
 }
 
+function createMatrixFromPoints(points, defValue, f) {
+    f = f || (() => 1);
+
+    const width = R.last(points.map(x => x[0]).sort((x, y) => x-y)) + 1;
+    const height = R.last(points.map(x => x[1]).sort((x, y) => x-y)) + 1;
+
+    const m = R.times(r => {
+        let line = Array.from({ length: width }, () => defValue);
+        points.filter(x => x[1] === r).forEach(x => line[x[0]] = f(x[0], r))
+        return line;
+    }, height);
+
+    return m;
+}
+
+function matrixToTile(m) {
+    let str = '';
+
+    m.forEach(r => {
+        const line = r.join('') + '\n';
+        str += line;
+    });
+
+    return str;
+}
+
 const minA = (x) => x.reduce((p, c) => Math.min(p, c), Number.POSITIVE_INFINITY);
 const maxA = (x) => x.reduce((p, c) => Math.max(p, c), Number.NEGATIVE_INFINITY);
 
@@ -75,5 +102,6 @@ module.exports = {
     parse,
     log, logf, logm,
     minA, maxA,
-    mapMatrix, filterMatrix
+    mapMatrix, filterMatrix,
+    createMatrixFromPoints, matrixToTile
 }
