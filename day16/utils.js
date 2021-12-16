@@ -98,11 +98,28 @@ const minA = (x) => x.reduce((p, c) => Math.min(p, c), Number.POSITIVE_INFINITY)
 const maxA = (x) => x.reduce((p, c) => Math.max(p, c), Number.NEGATIVE_INFINITY);
 const sortByNumber = R.sortBy(Number);
 
+function splitStringByLength(str, len) {
+    let result = [];
+    let j = 0;
+    let buf = [];
+
+    for (let i=0; i<str.length; i++) {
+        buf[j++] = str[i];
+        if (j == len) {
+            result.push(buf.join(''));
+            j = 0;
+        }
+    }
+
+    return result;
+}
+
 module.exports = {
     runWrapper,
     parse,
     log, logf, logm,
     minA, maxA, sortByNumber,
     mapMatrix, filterMatrix,
-    createMatrixFromPoints, matrixToTile
+    createMatrixFromPoints, matrixToTile,
+    splitStringByLength
 }

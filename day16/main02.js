@@ -37,7 +37,7 @@ function decodePackage(dataBinary) {
 }
 
 function decodeLiteralPackage(version, id, dataBinary) {
-    const allParts = splitStringByLength(dataBinary, 5);
+    const allParts = U.splitStringByLength(dataBinary, 5);
     const lastPartIndex = allParts.findIndex(x => x[0] === '0');
 
     const parts = allParts.slice(0, lastPartIndex + 1);
@@ -95,22 +95,6 @@ function decodeOperationPackage(version, id, dataBinary) {
     }
 }
 
-
-function splitStringByLength(str, len) {
-    let result = [];
-    let j = 0;
-    let buf = [];
-
-    for (let i=0; i<str.length; i++) {
-        buf[j++] = str[i];
-        if (j == len) {
-            result.push(buf.join(''));
-            j = 0;
-        }
-    }
-
-    return result;
-}
 
 function calculate(decoded) {
     switch(decoded.id) {
