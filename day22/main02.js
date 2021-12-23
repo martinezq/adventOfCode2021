@@ -68,7 +68,7 @@ function xor(c1, c2) {
     [[c1[4], it[4]-1], [it[4], it[5]], [it[5]+1, c1[5]]].filter(r => r[0] <= r[1]).forEach(rz => {
         [[c1[2], it[2]-1], [it[2], it[3]], [it[3]+1, c1[3]]].filter(r => r[0] <= r[1]).forEach(ry => {
             [[c1[0], it[0]-1], [it[0], it[1]], [it[1]+1, c1[1]]].filter(r => r[0] <= r[1]).forEach(rx => {
-                U.log(rz, ry, rx);
+                // U.log(rz, ry, rx);
                 result.push([rx, ry, rz].flat());
             })
         });
@@ -83,7 +83,6 @@ function valid(c) {
     if (!c) return false;
     return c[0] <= c[1] && c[2] <= c[3] && c[4] <= c[5];
 }
-
 
 function count(areas) {
     const parts = areas.map(a => {
