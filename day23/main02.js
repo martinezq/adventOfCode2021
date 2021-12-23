@@ -80,13 +80,13 @@ function play(game, level) {
 
     level = level || 0;
 
-    // if (level > 1) return game;
+    // if (level > 15) return game;
 
     if (game.done) {
         // U.log(game);
     }
 
-    if (game.done && game.cost < globalBestCost) {
+    if (game.done && game.cost <= globalBestCost) {
         globalBestCost = game.cost;
         globalBestGame = game;
         U.log(globalBestCost, level);
@@ -110,9 +110,9 @@ function nextStep(game) {
             const r = DESTINATIONS[amph];
 
             if (r === rindex) break;
-            if (game.rooms[r].length >= 4) break;
+            if (game.rooms[r].length >= 4) return;
 
-            if (game.rooms[r].some(x => x !== 'X')) break;
+            if (game.rooms[r].some(x => x !== 'X')) return;
 
             let h = CROSS[r];
 
@@ -123,14 +123,14 @@ function nextStep(game) {
             while(hi !== h) {
                 if (game.hall[hi] !== '.') {
                     hi = -1;
-                    break;
+                    return;
                 }
 
                 hi += d;
                 steps++;
             }
 
-            if (hi === -1) break;
+            if (hi === -1) return;
 
             steps += (4 - game.rooms[r].length);
 
@@ -149,6 +149,11 @@ function nextStep(game) {
             result.push(game2);
 
         } while(false);
+    });
+
+    game.rooms.forEach((room, rindex) => {
+        const amph = R.head(room);
+        if (amph === 'X' || !amph) return;
 
         // go from room to hall
         for (let h=0; h<11; h++) {
