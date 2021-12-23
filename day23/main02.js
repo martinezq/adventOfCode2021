@@ -8,7 +8,6 @@ const DESTINATIONS = {
     'D': 3
 }
 
-
 const COSTS = {
     'A': 1,
     'B': 10,
@@ -16,14 +15,13 @@ const COSTS = {
     'D': 1000
 }
 
-const ROOM_TO_HALL_ABOVE = [
-    2, 4, 6, 8
-]
+const CROSS = [2, 4, 6, 8];
 
-const ORDER = R.times(R.identity, 16).sort((x, y) => Math.random() - 0.5);
-const ORDER2 = R.times(R.identity, 11).sort((x, y) => Math.random() - 0.5);
+const HALL_OFFSET = 100;
 
-let globalBest = Number.POSITIVE_INFINITY;
+let globalBestCost = Number.POSITIVE_INFINITY;
+let globalBestGame;
+
 let cache = {};
 
 U.runWrapper(run);
@@ -36,290 +34,201 @@ function run(lines) {
     
     // U.log(data);
 
-    let amphs1 = data.flat().map((d, i) => ({ type: d, cost: 0, hall: undefined, room: i % 4, roomOrder: Math.floor(i / 4), done: false }));
+    let amphs = data.flat().map((d, i) => ({ type: d, cost: 0, hall: undefined, room: i % 4, roomOrder: Math.floor(i / 4), done: false }));
     
-    amphs1.filter(a => a.roomOrder === 3).forEach(a => a.done = a.room === DESTINATIONS[a.type]);
+    amphs.filter(a => a.roomOrder === 3).forEach(a => a.done = a.room === DESTINATIONS[a.type]);
 
     for (let i=2; i>=0; i--) {
-        let p = amphs1.filter(a => a.roomOrder === i+1);
-        amphs1.filter(a => a.roomOrder === i).forEach((a, j) => a.done = (a.room === DESTINATIONS[a.type] && p[j].done));
+        let p = amphs.filter(a => a.roomOrder === i+1);
+        amphs.filter(a => a.roomOrder === i).forEach((a, j) => a.done = (a.room === DESTINATIONS[a.type] && p[j].done));
     }
 
-    const amphs = {
-        totalCost: 0,
-        list: amphs1,
-        hallUsage: Array.from({ length: 11 }, _ => false),
-        roomUsage: [4, 4, 4, 4]
+    const game = {
+        hall: R.times(_ => '.', 11),
+        rooms: [
+            R.times(i => !amphs[i*4].done ? amphs[i*4].type : 'X', 4),
+            R.times(i => !amphs[i*4+1].done ? amphs[i*4+1].type : 'X', 4),
+            R.times(i => !amphs[i*4+2].done ? amphs[i*4+2].type : 'X', 4),
+            R.times(i => !amphs[i*4+3].done ? amphs[i*4+3].type : 'X', 4)
+        ],
+        cost: 0,
+        done: false
     }
 
-    U.log(amphs);
+    U.log(game);
 
     U.log('---');
 
-    // let tmp = amphs;
+    play(game);
 
-    // U.log('---');
-    // tmp = moveToHall(tmp, tmp[2], 3);
-    // tmp.forEach(a => U.log(a));
+    U.log('---');
 
-    // U.log('---');
-    // tmp = moveToHall(tmp, tmp[1], 6);
-    // tmp.forEach(a => U.log(a));
+    let p = globalBestGame;
 
-    // U.log('---');
-    // tmp = moveToRoom(tmp, tmp[1], 2);
-    // tmp.forEach(a => U.log(a));
-
-    // U.log('---');
-    // tmp = moveToRoom(tmp, tmp[1], 0);
-    // tmp.forEach(a => U.log(a));
-
-    const x = search(amphs);
-    // x.forEach(a => U.log(a));
-
-    return globalBest;
-}
-
-function search(amphs) {
-    const cost = costOfSolution(amphs);
-    if (cost > globalBest) {
-        return amphs;
+    while(p) {
+        U.log(R.omit(['_prev'], p));
+        p = p._prev;
     }
 
-    let bestSolution = amphs;
-    let bestSolutionCost = Number.POSITIVE_INFINITY;
-
-    // const key1 = makeKey(amphs)
-
-    for (let i=0; i<amphs.list.length; i++) {
-        const index = i;
-
-        if (amphs.list[index].done) continue;
-
-        // const key = key1 + '_' + index;
-        // const val = findInCache(key);
-        // if (val) return val;
     
-        const solution = move(amphs, index);        
-        const solutionCost = costOfSolution(solution);
 
-        // cache[key] = solution;
+    return globalBestCost;
+}
 
-        if (solutionCost < bestSolutionCost) {
-            bestSolution = solution;
-            bestSolutionCost = solutionCost;
-        }
-    }    
+function play(game, level) {
+    // U.log(game);
 
-    if (bestSolutionCost < globalBest && isDone(bestSolution)) {
-        globalBest = bestSolutionCost;
-        U.log(globalBest);
+    level = level || 0;
+
+    // if (level > 1) return game;
+
+    if (game.done) {
+        // U.log(game);
     }
 
-    return bestSolution;
-}
-
-function makeKey(amphs) {
-    return JSON.stringify(amphs.list);
-}
-
-function findInCache(key) {
-    return cache[key];
-}
-
-function move(amphs, index) {
-    const cost = costOfSolution(amphs);
-    if (cost > globalBest) {
-        return amphs;
+    if (game.done && game.cost < globalBestCost) {
+        globalBestCost = game.cost;
+        globalBestGame = game;
+        U.log(globalBestCost, level);
+        // U.log(game);
     }
 
-    const amph = amphs.list[index];
+    let games = nextStep(game).filter(g => g.cost < globalBestCost);
 
-    if (amph.done) return amphs;
-    
-    let result;
+    return games.map(g => play(g, level + 1)).flat();
+}
 
-    if (amph.room !== undefined) {
-        let bestSolution = undefined;
-        let bestSolutionCost = Number.POSITIVE_INFINITY;
+function nextStep(game) {
+    const result = [];
 
-        const step0 = moveToHall(amphs, index, ROOM_TO_HALL_ABOVE[amph.room]);
+    game.rooms.forEach((room, rindex) => {
+        const amph = R.head(room);
+        if (amph === 'X' || !amph) return;
 
-        if (step0) {
-            const step1 = moveToRoom(step0, index, DESTINATIONS[step0.list[index].type])
-            
-            if (step1) {
-                const solution = search(step1);
-                const solutionCost = costOfSolution(solution);
-        
-                if (solutionCost < bestSolutionCost) {
-                    bestSolution = solution;
-                    bestSolutionCost = solutionCost;
+        // go from room to room
+        do {
+            const r = DESTINATIONS[amph];
+
+            if (r === rindex) break;
+            if (game.rooms[r].length >= 4) break;
+
+            if (game.rooms[r].some(x => x !== 'X')) break;
+
+            let h = CROSS[r];
+
+            let steps = 5 - room.length;
+            let hi = CROSS[rindex];
+            let d = Math.sign(h - hi);
+
+            while(hi !== h) {
+                if (game.hall[hi] !== '.') {
+                    hi = -1;
+                    break;
                 }
-            }            
-        }
 
-        for (let hi=0; hi<11; hi++) {
-            const h = ORDER2[hi];
-            
-            if (ROOM_TO_HALL_ABOVE.indexOf(h) > -1) continue;
-
-            const step = moveToHall(amphs, index, h);
-            
-            if (step) {
-                const solution = search(step);
-
-                if (solution !== undefined) {
-                    const solutionCost = costOfSolution(solution);
-    
-                    if (solutionCost < bestSolutionCost) {
-                        bestSolution = solution;
-                        bestSolutionCost = solutionCost;
-                    }
-                }
+                hi += d;
+                steps++;
             }
+
+            if (hi === -1) break;
+
+            steps += (4 - game.rooms[r].length);
+
+            const cost = COSTS[amph] * steps;
+
+            let game2 = {
+                hall: game.hall,
+                rooms: game.rooms.map((x, ii) => x === room ? R.tail(x) : ii === r ? ['X'].concat(x) : x),
+                cost: game.cost + cost,
+                _prev: game
+            };
+
+            const roomsFlat = game2.rooms.flat();
+            game2.done = roomsFlat.length === 16 && roomsFlat.every(x => x === 'X');
+
+            result.push(game2);
+
+        } while(false);
+
+        // go from room to hall
+        for (let h=0; h<11; h++) {
+            if (h === 2 || h === 4 || h === 6 || h === 8) continue;
+            if (game.hall[h] !== '.') continue;
+
+            let steps = 5 - room.length;
+            let hi = CROSS[rindex];
+            let d = Math.sign(h - hi);
+
+            while(hi !== h) {
+                if (game.hall[hi] !== '.') {
+                    hi = -1;
+                    break;
+                }
+
+                hi += d;
+                steps++;
+            }
+
+            if (hi === -1) break;
+
+            const cost = COSTS[amph] * steps;
+
+            let game2 = {
+                hall: game.hall.map((x, ii) => ii === h ? amph : x),
+                rooms: game.rooms.map((x, ii) => x === room ? R.tail(x) : x),
+                cost: game.cost + cost,
+                _prev: game
+            }
+
+            const roomsFlat = game2.rooms.flat();
+            game2.done = roomsFlat.length === 16 && roomsFlat.every(x => x === 'X');
+
+            result.push(game2);
         }
-        // U.log('#', bestSolutionCost);
-        // U.log(bestSolution);
+    });
 
-        result = bestSolution;
+    // go from hall to room
+    game.hall.forEach((amph, hindex) => {
+        if (amph === '.') return;
 
-    } else {
-        const result1 = moveToRoom(amphs, index);
-        result = result1 ? search(result1) : undefined;
-    }
+        const r = DESTINATIONS[amph];
+        const h = CROSS[r];
 
-    // cache[key] = result;
+        if (game.rooms[r].some(x => x !== 'X')) return;
+
+        let steps = 0
+        let hi = hindex;
+        let d = Math.sign(h - hi);
+
+        while(hi !== h) {
+            if (hi !== hindex && game.hall[hi] !== '.') {
+                hi = -1;
+                break;
+            }
+
+            hi += d;
+            steps++;
+        }
+
+        if (hi === -1) return;
+
+        steps += (4 - game.rooms[r].length);
+
+        const cost = COSTS[amph] * steps;
+
+        let game2 = {
+            hall: game.hall.map((x, ii) => ii === hindex ? '.' : x),
+            rooms: game.rooms.map((x, ii) => ii === r ? ['X'].concat(x) : x),
+            cost: game.cost + cost,
+            _prev: game
+        }
+
+        const roomsFlat = game2.rooms.flat();
+        game2.done = roomsFlat.length === 16 && roomsFlat.every(x => x === 'X');
+
+        result.push(game2);        
+    })
+
 
     return result;
-}
-
-function moveToHall(amphs, index, hall) {
-    if (!amphs) return;
-
-    const amph = amphs.list[index];
-    const cost = costOfMoveToHall(amphs, index, hall);
-                
-    if (cost !== undefined) {
-        const newAmph = { ...amph, cost: amph.cost + cost, hall: hall, room: undefined, roomOrder: undefined };
-
-        return {
-            totalCost: amphs.totalCost + cost,
-            list : amphs.list.map((a, i) => i !== index ? a : newAmph),
-            hallUsage: amphs.hallUsage.map((u, i) => i === newAmph.hall ? true : u),
-            roomUsage: amphs.roomUsage.map((r, i) => i === amph.room ? r - 1 : r)
-        };
-    }
-}
-
-function moveToRoom(amphs, index) {
-    if (!amphs) return;
-
-    const amph = amphs.list[index];
-
-    const room = DESTINATIONS[amph.type];
-    const cost = costOfMoveToRoom(amphs, index, room);
-
-    if (cost !== undefined) {
-        const amphsInRoom = amphs.list.reduce((p, c) => c.room === room ? p + 1 : p, 0)
-        const newAmph = { ...amph, cost: amph.cost + cost, hall: undefined, room: room, roomOrder: 3 - amphsInRoom, done: true};
-
-        return {
-            totalCost: amphs.totalCost + cost,
-            list : amphs.list.map((a, i) => i !== index ? a : newAmph),
-            hallUsage: amphs.hallUsage.map((u, i) => i === amph.hall ? false : u),
-            roomUsage: amphs.roomUsage.map((r, i) => i === newAmph.room ? r + 1 : r)
-        };
-    }
-}
-
-function costOfMoveToHall(amphs, index, hall) {
-    const amph = amphs.list[index];
-
-    if (amph.done) return;
-    if (amph.hall !== undefined) return;
-
-    if (amph.roomOrder !== 4 - amphs.roomUsage[amph.room]) {
-        return;
-    }
-    
-    // if (amph.roomOrder === 1) {
-    //     const x = amphs.list.find(a => (a !== amph) && (a.room === amph.room && a.roomOrder === 0));
-    //     if (x) return;
-    // }
-
-    
-    // if (amphs.list.find(a => (a !== amph) && ((a.hall === hall) || (a.hall === ROOM_TO_HALL_ABOVE[amph.room])))) return;
-    if (amphs.hallUsage[hall] || amphs.hallUsage[ROOM_TO_HALL_ABOVE[amph.room]]) return;
-
-    let cost = (amph.roomOrder + 1) * COSTS[amph.type];
-
-    let hi = ROOM_TO_HALL_ABOVE[amph.room];
-
-    const d = Math.sign(hall - hi);
-
-    while(hi !== hall) {
-        if (hi < 0 || (hi > 10)) return;
-        // if (amphs.list.find(a => (a !== amph) && (a.hall === hi))) return;
-        if (amphs.hallUsage[hi] && amph.hall !== hi) return;
-        
-        hi += d;
-        cost += COSTS[amph.type];
-    }
-
-    return cost;
-}
-
-function costOfMoveInHall(amphs, index, hall) {
-    const amph = amphs.list[index];
-    if (amph.room !== undefined) return;
-
-    let cost = 0;
-
-    // if (amphs.list.find(a => (a !== amph) && (a.hall === hall))) return;
-    if (amphs.hallUsage[hall]) return;
-
-    let hi = amph.hall;
-    const d = Math.sign(hall - hi);
-
-    while(hi !== hall) {
-        if (hi < 0 || (hi > 10)) return;
-        
-        // if (amphs.list.find(a => (a !== amph) && (a.hall === hi))) return;
-        if (amphs.hallUsage[hi] && amph.hall !== hi) return;
-        
-        hi += d;
-        cost += COSTS[amph.type];
-    }
-
-    return cost;
-}
-
-function costOfMoveToRoom(amphs, index, room) {
-    const amph = amphs.list[index];
-
-    if (amph.done) return;
-    if (amph.room !== undefined) return;
-
-    let cost = costOfMoveInHall(amphs, index, ROOM_TO_HALL_ABOVE[room]);
-
-    if (cost === undefined) return;
-
-    // const amphsInRoom = amphs.list.filter(a => (a !== amph) && (a.room === room)).length;
-    const amphsInRoom = amphs.list.reduce((p, c) => c.room === room ? p + 1 : p, 0)
-
-    if (amphsInRoom >= 4) return;
-    cost += (4 - amphsInRoom) * COSTS[amph.type];
-    
-
-    return cost;
-}
-
-function costOfSolution(amphs) {
-    if (!amphs) return Number.POSITIVE_INFINITY;
-    return amphs.totalCost;
-}
-
-function isDone(amphs) {
-    return amphs.list.every(a => a.done);
 }
