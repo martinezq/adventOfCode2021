@@ -2,7 +2,7 @@ const R = require('ramda');
 const U = require('./utils');
 
 let best = Number.POSITIVE_INFINITY;
-let cache = {};
+let bestValue = String(0);
 
 U.runWrapper(run);
 
@@ -43,7 +43,7 @@ function run(lines) {
 
     const result = solve(funcs);
 
-    // return result;
+    return bestValue;
 
 }
 
@@ -53,16 +53,20 @@ function solve(funcs, level, presult, value) {
     presult = presult || 0;
     
     if (level > 13) {
-        if (presult < best) {
+        if (presult <= best) {
             best = presult;
-            U.log(value, level, presult);
+            if (Number(value) > Number(bestValue) && presult === 0) {
+                bestValue = value;
+                U.log(value, level, presult);
+            }
         }
+
         return;
     }
 
     const func = funcs[level];
 
-    for (let i=9; i>=0; i--) {
+    for (let i=9; i>=1; i--) {
         const fresult = func(i, presult);
 
         if (fresult > 1000000) continue;
@@ -109,52 +113,4 @@ function compile(commands) {
     code.push('return z');
 
     return Function('digit', 'zin', code.join('\n'));
-}
-
-function compile2(commands) {
-    let code = [
-        'let w=0; x=0, y=0, z=0;'
-    ];
-
-    let inputIndex = 0;
-
-    commands.forEach(cmd => {
-
-        // const decodedRight = typeof cmd.right === 'number' ? cmd.right : memory[cmd.right];
-
-        switch (cmd.code) {
-            case 'inp':
-                //memory[cmd.left] = input[inputIndex++];
-                // code.push(`console.log(${inputIndex}, w, x, y, z);`);
-                code.push(`${cmd.left} = input[${inputIndex++}];`);
-                break;
-            case 'add':
-                // memory[cmd.left] = memory[cmd.left] + decodedRight;
-                code.push(`${cmd.left} = ${cmd.left} + ${cmd.right};`);
-                break;
-            case 'mul':
-                // memory[cmd.left] = memory[cmd.left] * decodedRight;
-                code.push(`${cmd.left} = ${cmd.left} * ${cmd.right};`);
-                break;
-            case 'div':
-                // memory[cmd.left] = Math.floor(memory[cmd.left] / decodedRight);
-                code.push(`${cmd.left} = Math.floor(${cmd.left} / ${cmd.right});`);
-                break;
-            case 'mod':
-                // memory[cmd.left] = memory[cmd.left] % decodedRight;
-                code.push(`${cmd.left} = ${cmd.left} % ${cmd.right};`);
-                break;
-            case 'eql':
-                // memory[cmd.left] = (memory[cmd.left] === decodedRight) ? 1 : 0
-                code.push(`${cmd.left} = ${cmd.left} === ${cmd.right} ? 1 : 0;`)
-                break;
-        }
-
-        // U.log(cmd, memory, input, inputIndex);
-    });
-
-    // code.push('console.log(input, w, x, y, z);');
-    code.push('return z');
-
-    return Function('input', code.join('\n'));
 }
